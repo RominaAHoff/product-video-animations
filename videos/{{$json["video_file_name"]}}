@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Product Video Generator</title>
+<style>
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  font-family: system-ui;
+  color: white;
+}
+.container {
+  text-align: center;
+  padding: 20px;
+}
+h1 {
+  margin: 0 0 10px;
+  font-size: 28px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.info {
+  margin-bottom: 20px;
+  opacity: 0.9;
+}
+canvas {
+  border: 2px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+.controls {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 25px;
+  background: rgba(255,255,255,0.9);
+  color: #333;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+button:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+.status {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 5px;
+  background: rgba(0,0,0,0.2);
+  min-height: 20px;
+}
+.error { background: rgba(220, 53, 69, 0.8); }
+.success { background: rgba(40, 167, 69, 0.8); }
+.recording { background: rgba(255, 193, 7, 0.8); }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Product Showcase</h1>
+  <div class="info">
+    <strong>Dress</strong> • luxury background • floating animation
+  </div>
+  <canvas id="canvas" width="800" height="600"></canvas>
+  <div class="controls">
+    <button id="playBtn">▶ Play</button>
+    <button id="pauseBtn">⏸ Pause</button>
+    <button id="recordBtn">🎥 Record Video</button>
+    <button id="downloadBtn" style="display:none">⬇ Download Video</button>
+  </div>
+  <div id="status" class="status">Click Play to start animation</div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const playBtn = document.getElementById('playBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const recordBtn = document.getElementById('recordBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const status = document.getElementById('status');
+
+const img = new Image();
+img.crossOrigin = 'anonymous';
+img.src = 'https://RominaAHoff.github.io/product-video-animations/images/dress_1757040533301.png';
+
+let t = 0;
+let animationId = null;
+let isPlaying = false;
+let mediaRecorder = null;
+let recordedChunks = [];
+let stream = null;
+
+img.onload = () => {
+  status.textContent = 'Image loaded. Ready to animate!';
+  status.className = 'status success';
+  draw();
+};
+
+img.onerror = () => {
+  status.textContent = 'Error loading image. Please check the image path.';
+  status.className = 'status error';
+};
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw background
+  
+      const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width);
+      grad.addColorStop(0, '#2c3e50');
+      grad.addColorStop(1, '#000000');
+      ctx.fillStyle = grad;
+    
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  if (img.complete && img.naturalWidth > 0) {
+    // Calculate image size to fit canvas while maintaining aspect ratio
+    const scale = Math.min(
+      (canvas.width * 0.7) / img.width,
+      (canvas.height * 0.7) / img.height
+    );
+    
+    
+      const floatY = Math.sin(t * 0.04) * 15;
+      const floatX = Math.sin(t * 0.02) * 8;
+      ctx.save();
+      ctx.translate(canvas.width/2 + floatX, canvas.height/2 + floatY);
+      ctx.rotate(Math.sin(t * 0.01) * 0.05);
+    
+    
+    ctx.drawImage(
+      img,
+      -img.width * scale / 2,
+      -img.height * scale / 2,
+      img.width * scale,
+      img.height * scale
+    );
+    
+    ctx.restore();
+  }
+}
+
+function animate() {
+  if (!isPlaying) return;
+  
+  draw();
+  t += 1;
+  animationId = requestAnimationFrame(animate);
+}
+
+function play() {
+  if (!isPlaying) {
+    isPlaying = true;
+    animate();
+    status.textContent = 'Animation playing...';
+    status.className = 'status';
+  }
+}
+
+function pause() {
+  isPlaying = false;
+  if (animationId) {
+    cancelAnimationFrame(animationId);
+  }
+  status.textContent = 'Animation paused';
+  status.className = 'status';
+}
+
+async function startRecording() {
+  try {
+    if (!stream) {
+      stream = canvas.captureStream(30); // 30 FPS
+    }
+    
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(stream, {
+      mimeType: 'video/webm;codecs=vp9'
+    });
+    
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    };
+    
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Dress_showcase.webm';
+        a.click();
+      };
+      downloadBtn.style.display = 'inline-block';
+      status.textContent = 'Recording complete! Click download to save.';
+      status.className = 'status success';
+      recordBtn.disabled = false;
+    };
+    
+    mediaRecorder.start();
+    recordBtn.disabled = true;
+    status.textContent = `Recording for 12 seconds...`;
+    status.className = 'status recording';
+    
+    // Auto-start animation if not playing
+    if (!isPlaying) {
+      play();
+    }
+    
+    // Stop recording after specified duration
+    setTimeout(() => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+    }, 12000);
+    
+  } catch (error) {
+    status.textContent = 'Error starting recording: ' + error.message;
+    status.className = 'status error';
+    recordBtn.disabled = false;
+  }
+}
+
+// Event listeners
+playBtn.addEventListener('click', play);
+pauseBtn.addEventListener('click', pause);
+recordBtn.addEventListener('click', startRecording);
+
+// Initial draw
+draw();
+</script>
+</body>
+</html>
