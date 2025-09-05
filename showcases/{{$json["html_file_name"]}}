@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Product Showcase</title>
+<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#667eea,#764ba2);font-family:system-ui;} .wrap{background:#fff;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.15);padding:28px;max-width:860px;width:95%;} h1{margin:0 0 8px;font-size:28px;background:linear-gradient(45deg,#3498db,#9b59b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;} p{margin:0 0 16px;color:#6b7280} .canvasBox{margin-top:12px;border-radius:16px;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.15);} canvas{display:block;width:100%;height:auto;max-width:720px;} .hint{margin-top:12px;font-size:12px;color:#6b7280}</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Product Showcase</h1>
+<p>dress • studio style</p>
+<div class="canvasBox">
+<canvas id="c" width="720" height="480"></canvas>
+</div>
+<div class="hint">If animation stalls, reload the page.</div>
+</div>
+<script>const c=document.getElementById('c');const x=c.getContext('2d');const img=new Image();img.src='showcase_images/dress_1757039530275.png';let t=0;img.onload=()=>{requestAnimationFrame(loop);};function loop(){x.clearRect(0,0,c.width,c.height);const g=x.createLinearGradient(0,0,c.width,c.height);g.addColorStop(0,'#f8f9fa');g.addColorStop(1,'#e9ecef');x.fillStyle=g;x.fillRect(0,0,c.width,c.height);const s=Math.min(c.width/img.width,c.height/img.height)*0.8;const fy=Math.sin(t*0.04)*12;x.save();x.translate(c.width/2,c.height/2);x.rotate(Math.sin(t*0.02)*0.06);x.scale(1+Math.sin(t*0.03)*0.02,1+Math.sin(t*0.03)*0.02);x.drawImage(img,-img.width*s/2,-img.height*s/2+fy,img.width*s,img.height*s);x.restore();t++;requestAnimationFrame(loop);} </script>
+</body>
+</html>
